@@ -4,60 +4,66 @@
 int main()
 {
 SystemInfo tst;
-bool flag = true;
-char ch='y';
-while(flag)
-	{
-	if(ch=='y')
-	{
+//bool flag = true;
+//char ch='y';
+//while(flag)
+//	{
+//	if(ch=='y')
+//	{
+		std::string otvet = "";
 		system("clear");
-		printf("***System Info***\n\n");
+		otvet.append("***System Info***\n\n");
+		
 		
 		//-------Раздел вывода имен компьютера и пользователя--------
 		
-		tst.Names();
+		otvet.append(tst.GetUserInfo());
 		
 			
 		//---------------------Раздел вывода версии ОС-------------------
 		
-		tst.Version();
+		otvet.append(tst.GetOSVersionInfo());
 		
 		//--------------Раздел вывода информации о процессоре----------------
 		
-		tst.Processors();
+		otvet.append(tst.GetProcessorInfo());
 		
 		//------------------Вывод информации о памяти--------------------
 		
-		tst.Memory();
+		otvet.append(tst.GetMemoryInfo());
 		
 		//------------Вывод информации о сетевых адаптерах-----------------
-		tst.Adapters();
+		
+		otvet.append(tst.GetNetAdaptersInfo());
 		
 		//----------------Вывод информации о дисках---------
 		
-		tst.Discs();
+		otvet.append(tst.GetDriveInfo());
 		
 		//----------------Вывод информации о языке---------------
 		
-		tst.Language();
+		otvet.append(tst.GetLanguageInfo());
 		
 		//-------------Вывод информации о дате и времени---------------
 		
-		tst.Data();
-		
+		otvet.append(tst.GetDateInfo());
 		
 		//-------------Вывод информации об экране---------------
 		
-		tst.Screen();
+		otvet.append(tst.GetScreenInfo());
+		
+		std::cout << otvet << std::endl;
+		
+		return 0;
 		
 		
 		
-		cout << "Update?(y - yes, another key - no): ";
-		cin >> ch;
-	}
-	else
-	{
-		flag = false;
-	}
-}
+		//cout << "Update?(y - yes, another key - no): ";
+		//cin >> ch;
+	//}
+	//else
+	//{
+	//	flag = false;
+	//}
+//}
 }

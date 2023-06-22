@@ -1,33 +1,7 @@
 #include "funcs.h"
-#include <iostream>
-#include <cstdio>
-#include <unistd.h>
-#include <sys/utsname.h>
-#include <sys/sysinfo.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <linux/fb.h>
-#include <cassert>
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <fstream>
-#include <string>
-#include <cstring>//для strchr
-#include <inttypes.h>//для вывода %
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <time.h>
-#include <locale.h>
-#include <langinfo.h>
-#include <X11/Xlib.h>
-#define XLIB_ILLEGAL_ACCESS
+
+
+using namespace apc;
 
 char* SystemInfo::DelSym(char* line_1)
 {
@@ -49,136 +23,210 @@ SystemInfo::SystemInfo()
 {
 
 }
-void SystemInfo::Names()
+
+std::string SystemInfo::GetUserInfo()
 {
+	std::string itog = "";
 	char hostname[HOST_NAME_MAX];
 	char username[LOGIN_NAME_MAX];
 	gethostname(hostname, HOST_NAME_MAX);
 	getlogin_r(username, LOGIN_NAME_MAX);
-	printf("Computer Name: %s\n"
-		"User Name: %s\n",
-		hostname,
-		username);
+	itog.append("Computer Name: ");
+	itog.append(hostname);
+	itog.append("\nUser Name: ");
+	itog.append(username);
 		
 	int user = getuid();//Проверка на root-пользователя
 	if(user==0)
 	{
-		printf("User is root\n");
+		itog.append("\nUser is root\n");
 	}
 	else
 	{
-		printf("User is not root\n");
+		itog.append("\nUser is not root\n");
 	}
 		
 	char *IP;//для записи IP host'a
 	struct hostent *host_entry;
 	host_entry = gethostbyname(hostname);
 	IP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
-	printf("Host IP: %s\n\n", IP);
+	itog.append("Host IP: ");
+	itog.append(IP);
+	itog.append("\n\n");
+	
+	return itog;
 }
-void SystemInfo::Version()
+std::string SystemInfo::GetOSVersionInfo()
 {
-	printf("---OS Info---\n");
+	std::string itog = "";
+	itog.append("---OS Info---\n");
 	int skipline = 4;
-	char line[256];
-	printf("OS Description: ");//вывод названия ОС
+	char* line = new char[256];
+	itog.append("OS Description: ");//вывод названия ОС
 	FILE* f = fopen("/etc/lsb-release", "r");
 	for(int i = 0; i < skipline; i++, fgets(line, 256, f));
-	puts(strchr(line, '=') + 1);
+	itog.append(strchr(line, '=') + 1);
+	itog.append("\n");
 	fclose(f);
+	return itog;
 }
-void SystemInfo::Processors()
+std::string SystemInfo::GetProcessorInfo()
 {
-	printf("---Processors Info---\n");
+	std::string itog = "";
+	itog.append("---Processors Info---\n");
 	int skipline_1 = 5;
 	char* line_1 = new char[256];
 	FILE* f1 = fopen("/proc/cpuinfo", "r");
 	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
 	line_1 = DelSym(line_1);
-	puts(strchr(line_1, ':') + 2);
+	itog.append(strchr(line_1, ':') + 2);
 	
 	skipline_1 = 7;
-	printf("Number of processors: ");//вывод числа процессоров
+	itog.append("\nNumber of processors: ");//вывод числа процессоров
 	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
 	line_1 = DelSym(line_1);
-	puts(strchr(line_1, ':') + 2);
+	itog.append(strchr(line_1, ':') + 2);
 	
 	f1 = fopen("/proc/cpuinfo", "r");
 	skipline_1 = 2;
-	printf("Vendors ID: ");//Вывод идентификатора
+	itog.append("\nVendors ID: ");//Вывод идентификатора
 	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
 	line_1 = DelSym(line_1);
-	puts(strchr(line_1, ':') + 2);
+	itog.append(strchr(line_1, ':') + 2);
 	
 	skipline_1 = 5;
-	printf("Frequency: ~");//вывод частоты
+	itog.append("\nFrequency: ~");//вывод частоты
 	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
-	puts(strchr(line_1, ':') + 2);
+	itog.append(strchr(line_1, ':') + 2);
+	itog.append("\n");
 	fclose(f1);
+	return itog;
 }
-void SystemInfo::Memory()
+std::string SystemInfo::GetMemoryInfo()
 {
-	printf("---Memory Info---\n");
+	std::string itog = "";
+	itog.append("---Memory Info---\n");
 	struct sysinfo info;
-	sysinfo(&info);//по сути, обращение к файлу meminfo
-	printf("Total amount of RAM: %.3lf GB\n", (double)info.totalram/(1024*1024*1024));//Весь объем оперативки
-	printf("Amount of free RAM: %.3lf GB\n", (double)info.freeram/(1024*1024*1024));//Свободная оперативка
-	double perc = (double)info.freeram/(double)info.totalram;//для хранения процента свободной оперативки
-	printf("Percent of free RAM: %.1lf % \n", perc * 100);
-	printf("\n");
+	sysinfo(&info);
+	itog.append("Total amount of RAM: ");
+	itog.append(std::to_string((double)info.totalram/(1024*1024*1024)));
+	itog.append(" GB\n");
+	itog.append("Amount of free RAM: ");
+	itog.append(std::to_string((double)info.freeram/(1024*1024*1024)));
+	itog.append(" GB\n");
+	double perc = 100 * (double)info.freeram/(double)info.totalram;
+	itog.append("Percent of free RAM: ");
+	itog.append(std::to_string(perc));
+	itog.append(" %\n\n");
+	return itog;
 }
-void SystemInfo::Adapters()
+std::string SystemInfo::GetNetAdaptersInfo()
 {
-	printf("---Network Adapters Info--- \n");
-	printf("Adapter Name: \n");
-	string strN = "basename /sys/class/net/enp*";
+	std::string itog = "";
+	itog.append("---Network Adapters Info--- \n");
+	itog.append("Adapter Name: ");
+	std::string strN = "basename /sys/class/net/enp*";
 	const char *commandN = strN.c_str();
-	system(commandN);
-	printf("MAC address: \n");
-	string str1 = "cat /sys/class/net/enp*/address";
-	const char *command1 = str1.c_str();
-	system(command1);
-	printf("IP address: \n");
-	system("hostname -I");
+	FILE* FileOpen;
+	char* line = new char[256];
+	FileOpen = popen(commandN, "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
 	
-	printf("\nAdapter Name: \n");
+	itog.append("MAC address: ");
+	std::string str1 = "cat /sys/class/net/enp*/address";
+	const char *command1 = str1.c_str();
+	FileOpen = popen(command1, "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	
+	itog.append("IP address: ");
+	FileOpen = popen("hostname -I", "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	
+	itog.append("\nAdapter Name: ");
 	strN = "basename /sys/class/net/lo";
 	commandN = strN.c_str();
-	system(commandN);
-	printf("MAC address: \n");
+	FileOpen = popen(commandN, "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	
+	itog.append("MAC address: ");
 	str1 = "cat /sys/class/net/lo/address";
 	command1 = str1.c_str();
-	system(command1);
-	printf("\n");
+	FileOpen = popen(command1, "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	
+	itog.append("\n");
+	return itog;
 }
-void SystemInfo::Discs()
+std::string SystemInfo::GetDriveInfo()
 {
-	printf("---Disk Information---\n");
-	system("df -h /dev/sda*");
-	printf("\n");
+	std::string itog = "";
+	itog.append("---Disk Information---\n");
+	FILE* FileOpen;
+	char* line = new char[256];
+	FileOpen = popen("df -h /dev/sda*", "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	itog.append("\n");
+	return itog;
 }
-void SystemInfo::Language()
+std::string SystemInfo::GetLanguageInfo()
 {
-	printf("---Language Info--- \n");
-	cout << "System language: " << locale("").name() << endl;
+	std::string itog = "";
+	itog.append("---Language Info--- \n");
+	itog.append("System language: ");
+	itog.append(std::locale("").name());
+	itog.append("\n");
 	char* encoding = nl_langinfo(CODESET);
-	printf("Encoding: %s\n\n", encoding);
+	itog.append("Encoding: ");
+	itog.append(encoding);
+	itog.append("\n\n");
+	return itog;
 }
-void SystemInfo::Data()
+std::string SystemInfo::GetDateInfo()
 {
-	printf("---Time Zone Info--- \n");
+	std::string itog = "";
+	itog.append("---Time Zone Info--- \n");
 	time_t rawtime;
 	struct tm *timeinfo;
-	struct tm *timeinfo1;
+	//struct tm *timeinfo1;
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	printf("Data and time(Current): %s", asctime(timeinfo));
-	timeinfo = localtime(&rawtime);
-	timeinfo1 = gmtime(&rawtime);
-	printf("Data and time(GMT): %s\n", asctime(timeinfo1));
+	itog.append("Data and time(Current): ");
+	itog.append(asctime(timeinfo));
+	timeinfo = gmtime(&rawtime);
+	itog.append("Data and time(GMT): ");
+	itog.append(asctime(timeinfo));
+	itog.append("\n");
+	return itog;
 }
-void SystemInfo::Screen()
+std::string SystemInfo::GetScreenInfo()
 {
-	printf("---Screen Info--- \n");
-	system("xrandr | grep ' connected'");
+	std::string itog = "";
+	itog.append("---Screen Info--- \n");
+	FILE* FileOpen;
+	char* line = new char[256];
+	FileOpen = popen("xrandr | grep ' connected'", "r");
+	while(fgets(line, 256, FileOpen))
+	{
+		itog.append(line);
+	}
+	itog.append("\n");
+	return itog;
 }
