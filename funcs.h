@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdio>
+#include <ctype.h>
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
@@ -23,8 +24,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <ctime>
 #include <locale.h>
 #include <langinfo.h>
+#include <thread>
+#include <string.h>
+#include <dirent.h>
+#include <fnmatch.h>
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/module.h>
 
 namespace apc
 {
@@ -33,6 +42,7 @@ namespace apc
 	public:
 		SystemInfo();
 		char* DelSym(char* line_1);//вспомогательная функция
+		int is_pid_folder(const struct dirent *entry);
 		
 		std::string GetUserInfo();
 		std::string GetOSVersionInfo();
@@ -43,5 +53,8 @@ namespace apc
 		std::string GetLanguageInfo();
 		std::string GetDateInfo();
 		std::string GetScreenInfo();
+		std::string GetThreadsInfo();
+		std::string GetProcMemInfo();
+		std::string GetSocketInfo();
 	};
 }

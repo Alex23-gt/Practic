@@ -1,25 +1,21 @@
 #include "funcs.cpp"
 
 
+
+
+
 int main()
 {
-SystemInfo tst;
-//bool flag = true;
-//char ch='y';
-//while(flag)
-//	{
-//	if(ch=='y')
-//	{
+		SystemInfo tst;		
 		std::string otvet = "";
+		std::string otvet1 = "";
 		system("clear");
 		otvet.append("***System Info***\n\n");
-		
 		
 		//-------Раздел вывода имен компьютера и пользователя--------
 		
 		otvet.append(tst.GetUserInfo());
 		
-			
 		//---------------------Раздел вывода версии ОС-------------------
 		
 		otvet.append(tst.GetOSVersionInfo());
@@ -52,18 +48,20 @@ SystemInfo tst;
 		
 		otvet.append(tst.GetScreenInfo());
 		
-		std::cout << otvet << std::endl;
 		
-		return 0;
+		otvet1.append(tst.GetThreadsInfo());
+		otvet1.append(tst.GetProcMemInfo());
+		otvet1.append(tst.GetSocketInfo());
 		
+		std::cout << otvet1;
 		
+		pid_t pid, ppid;
 		
-		//cout << "Update?(y - yes, another key - no): ";
-		//cin >> ch;
-	//}
-	//else
-	//{
-	//	flag = false;
-	//}
-//}
+		pid = getpid();
+		ppid = getppid();
+		
+		//printf("PID: %d\n", pid);
+		//printf("PPID: %d\n", ppid);
+			
+		
 }

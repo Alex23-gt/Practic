@@ -19,6 +19,17 @@ char* SystemInfo::DelSym(char* line_1)
 	return line_1;
 }
 
+int SystemInfo::is_pid_folder(const struct dirent *entry) {
+    const char *p;
+ 
+    for (p = entry->d_name; *p; p++) {
+        if (!isdigit(*p))
+            return 0;
+    }
+ 
+    return 1;
+}
+
 SystemInfo::SystemInfo()
 {
 
@@ -56,6 +67,7 @@ std::string SystemInfo::GetUserInfo()
 	
 	return itog;
 }
+
 std::string SystemInfo::GetOSVersionInfo()
 {
 	std::string itog = "";
@@ -70,6 +82,7 @@ std::string SystemInfo::GetOSVersionInfo()
 	fclose(f);
 	return itog;
 }
+
 std::string SystemInfo::GetProcessorInfo()
 {
 	std::string itog = "";
@@ -102,6 +115,7 @@ std::string SystemInfo::GetProcessorInfo()
 	fclose(f1);
 	return itog;
 }
+
 std::string SystemInfo::GetMemoryInfo()
 {
 	std::string itog = "";
@@ -120,6 +134,7 @@ std::string SystemInfo::GetMemoryInfo()
 	itog.append(" %\n\n");
 	return itog;
 }
+
 std::string SystemInfo::GetNetAdaptersInfo()
 {
 	std::string itog = "";
@@ -172,6 +187,7 @@ std::string SystemInfo::GetNetAdaptersInfo()
 	itog.append("\n");
 	return itog;
 }
+
 std::string SystemInfo::GetDriveInfo()
 {
 	std::string itog = "";
@@ -186,6 +202,7 @@ std::string SystemInfo::GetDriveInfo()
 	itog.append("\n");
 	return itog;
 }
+
 std::string SystemInfo::GetLanguageInfo()
 {
 	std::string itog = "";
@@ -199,6 +216,7 @@ std::string SystemInfo::GetLanguageInfo()
 	itog.append("\n\n");
 	return itog;
 }
+
 std::string SystemInfo::GetDateInfo()
 {
 	std::string itog = "";
@@ -216,6 +234,7 @@ std::string SystemInfo::GetDateInfo()
 	itog.append("\n");
 	return itog;
 }
+
 std::string SystemInfo::GetScreenInfo()
 {
 	std::string itog = "";
@@ -228,5 +247,140 @@ std::string SystemInfo::GetScreenInfo()
 		itog.append(line);
 	}
 	itog.append("\n");
+	return itog;
+}
+
+std::string SystemInfo::GetThreadsInfo()
+{
+	std::string itog = "";
+	itog.append("---Threads Info--- \n");
+	DIR *procdir;
+    FILE *fp;
+	struct dirent *entry;
+	char path[256 + 5 + 5]; // d_name + /proc + /stat
+	int pid;
+	long threads;
+	
+	// Open /proc directory.
+	procdir = opendir("/proc");
+	if (!procdir) 
+	{
+	    perror("opendir failed");
+	    //return 1;
+	}
+	
+	// Iterate through all files and folders of /proc.
+	while ((entry = readdir(procdir))) 
+	{
+	    // Skip anything that is not a PID folder.
+	    if (!is_pid_folder(entry))
+	        continue;
+	
+	    // Try to open /proc/<PID>/stat.
+	    snprintf(path, sizeof(path), "/proc/%s/stat", entry->d_name);
+	    fp = fopen(path, "r");
+	
+	    if (!fp) 
+	    {
+	        perror(path);
+	        continue;
+	    }
+	
+	    // Get PID, process name and number of faults.
+	    fscanf(fp, "%d %s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %ld",
+	        &pid, &path, &threads
+	    );
+	
+	    // Pretty print.
+	    //printf("%5d %-20s: %lu\n", pid, path, threads);
+	    itog.append(std::to_string(pid));
+	    itog.append(" ");
+	    itog.append(path);
+	    itog.append(": ");
+	    itog.append(std::to_string(threads));
+	    itog.append("\n");
+	    fclose(fp);
+	}
+	itog.append("\n");
+	return itog;
+}
+
+std::string SystemInfo::GetProcMemInfo()
+{
+	std::string itog = "";
+	itog.append("---Process Memory Info--- \n");
+	DIR *procdir;
+    FILE *fp;
+	struct dirent *entry;
+	char path[256 + 5 + 5]; // d_name + /proc + /stat
+	int pid;
+	long ram;
+	
+	// Open /proc directory.
+	procdir = opendir("/proc");
+	if (!procdir) 
+	{
+	    perror("opendir failed");
+	    //return 1;
+	}
+	
+	std::string cur_dir = "/proc/";
+	cur_dir += std::to_string(getpid());
+	cur_dir += "/stat";
+	const char* cur_dir1 = cur_dir.c_str();
+	
+	snprintf(path, sizeof(path), cur_dir1);
+	fp = fopen(path, "r");
+	
+
+	
+	// Get PID, process name and number of faults.
+	fscanf(fp, "%d %s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %*llu %*lu %ld",
+	    &pid, &path, &ram
+	);
+	
+	long page_size_kb = sysconf(_SC_PAGE_SIZE)/1024;
+	// Pretty print.
+	//printf("%5d %-20s: %lu\n", pid, path, threads);
+	itog.append(std::to_string(pid));
+	itog.append(" ");
+	itog.append(path);
+	itog.append(": ");
+	itog.append(std::to_string(ram * page_size_kb));
+	itog.append("\n\n");
+	fclose(fp);
+	return itog;
+}
+
+std::string SystemInfo::GetSocketInfo()
+{
+	std::string itog = "";
+	itog.append("---Sockets Info--- \n");
+	itog.append("TCP Sockets:\n");
+	std::ifstream fin("/proc/net/tcp");
+	std::string strbuf;
+	
+	while(!fin.eof())
+	{
+		getline(fin, strbuf);
+		itog += strbuf;
+		if(!fin.eof())
+		{
+			itog += '\n';
+		}
+	}
+	
+	itog.append("UDP Sockets:\n");
+	std::ifstream fin1("/proc/net/udp");
+	
+	while(!fin1.eof())
+	{
+		getline(fin1, strbuf);
+		itog += strbuf;
+		if(!fin1.eof())
+		{
+			itog += '\n';
+		}
+	}
 	return itog;
 }
