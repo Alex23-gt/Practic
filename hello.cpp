@@ -1,14 +1,16 @@
 #include "funcs.cpp"
 
-
-
-
-
 int main()
 {
 		SystemInfo tst;		
 		std::string otvet = "";
 		std::string otvet1 = "";
+		
+		int pid;
+		
+		std::cout << "Enter the process ID: ";
+		std::cin >> pid;
+		
 		system("clear");
 		otvet.append("***System Info***\n\n");
 		
@@ -26,7 +28,8 @@ int main()
 		
 		//------------------Вывод информации о памяти--------------------
 		
-		otvet.append(tst.GetMemoryInfo());
+		const MemoryInfo memory = tst.GetMemoryInfo();
+		otvet.append(tst.OutMemoryInfo(memory));
 		
 		//------------Вывод информации о сетевых адаптерах-----------------
 		
@@ -48,20 +51,24 @@ int main()
 		
 		otvet.append(tst.GetScreenInfo());
 		
+		//const std::vector<ThreadInfo> threads = tst.GetThreadsInfo();
+		//otvet1.append(tst.OutThreadsInfo(threads));
 		
-		otvet1.append(tst.GetThreadsInfo());
-		otvet1.append(tst.GetProcMemInfo());
-		otvet1.append(tst.GetSocketInfo());
 		
+		
+		if(pid == 0)
+			pid = getpid();
+		
+		
+		const ProcThreadInfo ProcThr = tst.GetProcThreadInfo(pid);
+		otvet1.append(tst.OutProcThreadInfo(ProcThr));
+		
+		const ProcMemoryInfo ProcMem = tst.GetProcMemoryInfo(pid);
+		otvet1.append(tst.OutProcMemoryInfo(ProcMem));
+		
+		const ProcSocketInfo ProcSoc = tst.GetUsedSocketForProcess(pid);
+		otvet1.append(tst.OutUsedSocketForProcess(ProcSoc));
+		
+		std::cout << otvet;
 		std::cout << otvet1;
-		
-		pid_t pid, ppid;
-		
-		pid = getpid();
-		ppid = getppid();
-		
-		//printf("PID: %d\n", pid);
-		//printf("PPID: %d\n", ppid);
-			
-		
 }

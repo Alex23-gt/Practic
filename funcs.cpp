@@ -116,21 +116,29 @@ std::string SystemInfo::GetProcessorInfo()
 	return itog;
 }
 
-std::string SystemInfo::GetMemoryInfo()
+MemoryInfo SystemInfo::GetMemoryInfo()
+{
+	MemoryInfo myVec;
+	struct sysinfo info;
+	sysinfo(&info);
+	myVec.TotalMem = (double)info.totalram/(1024*1024*1024);
+	myVec.FreeMem = (double)info.freeram/(1024*1024*1024);
+	myVec.Percent = 100 * (double)info.freeram/(double)info.totalram;
+	return myVec;
+}
+
+std::string SystemInfo::OutMemoryInfo(const MemoryInfo& myVec)
 {
 	std::string itog = "";
 	itog.append("---Memory Info---\n");
-	struct sysinfo info;
-	sysinfo(&info);
 	itog.append("Total amount of RAM: ");
-	itog.append(std::to_string((double)info.totalram/(1024*1024*1024)));
+	itog.append(std::to_string(myVec.TotalMem));
 	itog.append(" GB\n");
 	itog.append("Amount of free RAM: ");
-	itog.append(std::to_string((double)info.freeram/(1024*1024*1024)));
+	itog.append(std::to_string(myVec.FreeMem));
 	itog.append(" GB\n");
-	double perc = 100 * (double)info.freeram/(double)info.totalram;
 	itog.append("Percent of free RAM: ");
-	itog.append(std::to_string(perc));
+	itog.append(std::to_string(myVec.Percent));
 	itog.append(" %\n\n");
 	return itog;
 }
@@ -250,33 +258,28 @@ std::string SystemInfo::GetScreenInfo()
 	return itog;
 }
 
-std::string SystemInfo::GetThreadsInfo()
+std::vector<ThreadInfo> SystemInfo::GetThreadsInfo()
 {
-	std::string itog = "";
-	itog.append("---Threads Info--- \n");
+	std::vector<ThreadInfo> myVec;
 	DIR *procdir;
     FILE *fp;
 	struct dirent *entry;
-	char path[256 + 5 + 5]; // d_name + /proc + /stat
+	char path[256 + 5 + 5];
 	int pid;
 	long threads;
 	
-	// Open /proc directory.
 	procdir = opendir("/proc");
 	if (!procdir) 
 	{
 	    perror("opendir failed");
-	    //return 1;
 	}
 	
-	// Iterate through all files and folders of /proc.
+	int iter = 0;
 	while ((entry = readdir(procdir))) 
 	{
-	    // Skip anything that is not a PID folder.
 	    if (!is_pid_folder(entry))
 	        continue;
 	
-	    // Try to open /proc/<PID>/stat.
 	    snprintf(path, sizeof(path), "/proc/%s/stat", entry->d_name);
 	    fp = fopen(path, "r");
 	
@@ -286,69 +289,138 @@ std::string SystemInfo::GetThreadsInfo()
 	        continue;
 	    }
 	
-	    // Get PID, process name and number of faults.
 	    fscanf(fp, "%d %s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %ld",
 	        &pid, &path, &threads
 	    );
 	
-	    // Pretty print.
-	    //printf("%5d %-20s: %lu\n", pid, path, threads);
-	    itog.append(std::to_string(pid));
-	    itog.append(" ");
-	    itog.append(path);
-	    itog.append(": ");
-	    itog.append(std::to_string(threads));
-	    itog.append("\n");
+	    std::string path1(path);
+	    
+	    myVec.push_back(ThreadInfo());
+	    myVec[iter].pid = pid;
+	    myVec[iter].Path = path1;
+	    myVec[iter].Thread = threads;
+	    
+	    iter++;
 	    fclose(fp);
 	}
-	itog.append("\n");
+	return myVec;
+}
+
+std::string SystemInfo::OutThreadsInfo(const std::vector<ThreadInfo>& myVec)
+{
+	std::string itog = "";
+	itog.append("---Threads Info---\n");
+	for(auto& a : myVec)
+	{
+		itog.append(std::to_string(a.pid));
+		itog.append(" ");
+		itog.append(a.Path);
+		itog.append(": ");
+		itog.append(std::to_string(a.Thread));
+		itog.append("\n");
+	}
 	return itog;
 }
 
-std::string SystemInfo::GetProcMemInfo()
+
+ProcThreadInfo SystemInfo::GetProcThreadInfo(int pid)
 {
-	std::string itog = "";
-	itog.append("---Process Memory Info--- \n");
+	ProcThreadInfo myVec;
 	DIR *procdir;
     FILE *fp;
 	struct dirent *entry;
 	char path[256 + 5 + 5]; // d_name + /proc + /stat
-	int pid;
-	long ram;
+	//int pid;
+	long threads;
 	
-	// Open /proc directory.
 	procdir = opendir("/proc");
 	if (!procdir) 
 	{
 	    perror("opendir failed");
-	    //return 1;
 	}
 	
 	std::string cur_dir = "/proc/";
-	cur_dir += std::to_string(getpid());
+	cur_dir += std::to_string(pid);
 	cur_dir += "/stat";
 	const char* cur_dir1 = cur_dir.c_str();
 	
 	snprintf(path, sizeof(path), cur_dir1);
 	fp = fopen(path, "r");
 	
-
+	fscanf(fp, "%d %s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %ld",
+	        &pid, &path, &threads
+	    );
 	
-	// Get PID, process name and number of faults.
+	std::string path1(path);
+	    
+	myVec.pid = pid;
+	myVec.Path = path1;
+	myVec.Thread = threads;
+	fclose(fp);
+	return myVec;
+}
+
+std::string SystemInfo::OutProcThreadInfo (const ProcThreadInfo& myVec)
+{
+	std::string itog = "";
+	itog.append("---Process Threads Info---\n");
+	itog.append(std::to_string(myVec.pid));
+	itog.append(" ");
+	itog.append(myVec.Path);
+	itog.append(": ");
+	itog.append(std::to_string(myVec.Thread));
+	itog.append("\n\n");
+	return itog;
+}
+		
+ProcMemoryInfo SystemInfo::GetProcMemoryInfo(int pid)
+{
+	ProcMemoryInfo myVec;
+	DIR *procdir;
+    FILE *fp;
+	struct dirent *entry;
+	char path[256 + 5 + 5]; // d_name + /proc + /stat
+	//int pid;
+	long ram;
+	
+	procdir = opendir("/proc");
+	if (!procdir) 
+	{
+	    perror("opendir failed");
+	}
+	
+	std::string cur_dir = "/proc/";
+	cur_dir += std::to_string(pid);
+	cur_dir += "/stat";
+	const char* cur_dir1 = cur_dir.c_str();
+	
+	snprintf(path, sizeof(path), cur_dir1);
+	fp = fopen(path, "r");
+	
 	fscanf(fp, "%d %s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %*llu %*lu %ld",
 	    &pid, &path, &ram
 	);
 	
 	long page_size_kb = sysconf(_SC_PAGE_SIZE)/1024;
-	// Pretty print.
-	//printf("%5d %-20s: %lu\n", pid, path, threads);
-	itog.append(std::to_string(pid));
-	itog.append(" ");
-	itog.append(path);
-	itog.append(": ");
-	itog.append(std::to_string(ram * page_size_kb));
-	itog.append("\n\n");
+	std::string path1(path);
+	
+	myVec.pid = pid;
+	myVec.Path = path1;
+	myVec.MemoryMB = ram * page_size_kb / 1024;
 	fclose(fp);
+	return myVec;
+}
+
+std::string SystemInfo::OutProcMemoryInfo(const ProcMemoryInfo& myVec)
+{
+	std::string itog = "";
+	itog.append("---Process Memory Info---\n");
+	itog.append(std::to_string(myVec.pid));
+	itog.append(" ");
+	itog.append(myVec.Path);
+	itog.append(": ");
+	itog.append(std::to_string(myVec.MemoryMB));
+	itog.append("\n\n");
 	return itog;
 }
 
@@ -382,5 +454,40 @@ std::string SystemInfo::GetSocketInfo()
 			itog += '\n';
 		}
 	}
+	return itog;
+}
+
+ProcSocketInfo SystemInfo::GetUsedSocketForProcess(int pid)
+{
+	ProcSocketInfo myVec;
+	//int pid = getpid();
+	char path[256];
+	snprintf(path, sizeof(path), "/proc/%d/net/sockstat", pid);
+	
+	FILE* file = fopen(path, "r");
+	char line[256];
+	int numSockets = 0;
+	
+	while(fgets(line, sizeof(line), file) != NULL)
+	{
+		if(strncmp(line, "sockets:", 8) == 0)
+		{
+			sscanf(line + 8, "%d %d %d %d %d", &numSockets);
+			break;
+		}
+	}
+	
+	myVec.NumSocket = numSockets;
+	fclose(file);
+	return myVec;
+}
+
+std::string SystemInfo::OutUsedSocketForProcess(const ProcSocketInfo& myVec)
+{
+	std::string itog = "";
+	itog.append("---Process Sockets Info---\n");
+	itog.append("Number of sockets used in proccess: ");
+	itog.append(std::to_string(myVec.NumSocket));
+	itog.append("\n\n");
 	return itog;
 }
