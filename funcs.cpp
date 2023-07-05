@@ -19,7 +19,7 @@ char* SystemInfo::DelSym(char* line_1)
 	return line_1;
 }
 
-int SystemInfo::is_pid_folder(const struct dirent *entry) {
+int SystemInfo::IsPid(const struct dirent *entry) {
     const char *p;
  
     for (p = entry->d_name; *p; p++) {
@@ -87,32 +87,32 @@ std::string SystemInfo::GetProcessorInfo()
 {
 	std::string itog = "";
 	itog.append("---Processors Info---\n");
-	int skipline_1 = 5;
-	char* line_1 = new char[256];
-	FILE* f1 = fopen("/proc/cpuinfo", "r");
-	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
-	line_1 = DelSym(line_1);
-	itog.append(strchr(line_1, ':') + 2);
+	int skipline = 5;
+	char* line = new char[256];
+	FILE* f = fopen("/proc/cpuinfo", "r");
+	for(int i = 0; i < skipline; i++, fgets(line, 256, f));
+	line = DelSym(line);
+	itog.append(strchr(line, ':') + 2);
 	
-	skipline_1 = 7;
+	skipline = 7;
 	itog.append("\nNumber of processors: ");//вывод числа процессоров
-	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
-	line_1 = DelSym(line_1);
-	itog.append(strchr(line_1, ':') + 2);
+	for(int i = 0; i < skipline; i++, fgets(line, 256, f));
+	line = DelSym(line);
+	itog.append(strchr(line, ':') + 2);
 	
-	f1 = fopen("/proc/cpuinfo", "r");
-	skipline_1 = 2;
+	f = fopen("/proc/cpuinfo", "r");
+	skipline = 2;
 	itog.append("\nVendors ID: ");//Вывод идентификатора
-	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
-	line_1 = DelSym(line_1);
-	itog.append(strchr(line_1, ':') + 2);
+	for(int i = 0; i < skipline; i++, fgets(line, 256, f));
+	line = DelSym(line);
+	itog.append(strchr(line, ':') + 2);
 	
-	skipline_1 = 5;
+	skipline = 5;
 	itog.append("\nFrequency: ~");//вывод частоты
-	for(int i = 0; i < skipline_1; i++, fgets(line_1, 256, f1));
-	itog.append(strchr(line_1, ':') + 2);
+	for(int i = 0; i < skipline; i++, fgets(line, 256, f));
+	itog.append(strchr(line, ':') + 2);
 	itog.append("\n");
-	fclose(f1);
+	fclose(f);
 	return itog;
 }
 
@@ -277,7 +277,7 @@ std::vector<ThreadInfo> SystemInfo::GetThreadsInfo()
 	int iter = 0;
 	while ((entry = readdir(procdir))) 
 	{
-	    if (!is_pid_folder(entry))
+	    if (!IsPid(entry))
 	        continue;
 	
 	    snprintf(path, sizeof(path), "/proc/%s/stat", entry->d_name);
@@ -318,6 +318,39 @@ std::string SystemInfo::OutThreadsInfo(const std::vector<ThreadInfo>& myVec)
 		itog.append(": ");
 		itog.append(std::to_string(a.Thread));
 		itog.append("\n");
+	}
+	return itog;
+}
+
+std::string SystemInfo::GetSocketInfo()
+{
+	std::string itog = "";
+	itog.append("---Sockets Info--- \n");
+	itog.append("TCP Sockets:\n");
+	std::ifstream fin("/proc/net/tcp");
+	std::string strbuf;
+	
+	while(!fin.eof())
+	{
+		getline(fin, strbuf);
+		itog += strbuf;
+		if(!fin.eof())
+		{
+			itog += '\n';
+		}
+	}
+	
+	itog.append("UDP Sockets:\n");
+	std::ifstream fin1("/proc/net/udp");
+	
+	while(!fin1.eof())
+	{
+		getline(fin1, strbuf);
+		itog += strbuf;
+		if(!fin1.eof())
+		{
+			itog += '\n';
+		}
 	}
 	return itog;
 }
@@ -424,40 +457,7 @@ std::string SystemInfo::OutProcMemoryInfo(const ProcMemoryInfo& myVec)
 	return itog;
 }
 
-std::string SystemInfo::GetSocketInfo()
-{
-	std::string itog = "";
-	itog.append("---Sockets Info--- \n");
-	itog.append("TCP Sockets:\n");
-	std::ifstream fin("/proc/net/tcp");
-	std::string strbuf;
-	
-	while(!fin.eof())
-	{
-		getline(fin, strbuf);
-		itog += strbuf;
-		if(!fin.eof())
-		{
-			itog += '\n';
-		}
-	}
-	
-	itog.append("UDP Sockets:\n");
-	std::ifstream fin1("/proc/net/udp");
-	
-	while(!fin1.eof())
-	{
-		getline(fin1, strbuf);
-		itog += strbuf;
-		if(!fin1.eof())
-		{
-			itog += '\n';
-		}
-	}
-	return itog;
-}
-
-ProcSocketInfo SystemInfo::GetUsedSocketForProcess(int pid)
+ProcSocketInfo SystemInfo::GetProcSocketInfo(int pid)
 {
 	ProcSocketInfo myVec;
 	//int pid = getpid();
@@ -482,7 +482,7 @@ ProcSocketInfo SystemInfo::GetUsedSocketForProcess(int pid)
 	return myVec;
 }
 
-std::string SystemInfo::OutUsedSocketForProcess(const ProcSocketInfo& myVec)
+std::string SystemInfo::OutProcSocketInfo(const ProcSocketInfo& myVec)
 {
 	std::string itog = "";
 	itog.append("---Process Sockets Info---\n");

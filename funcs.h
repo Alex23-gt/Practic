@@ -81,7 +81,7 @@ namespace apc
 	public:
 		SystemInfo();
 		char* DelSym(char* line_1);
-		int is_pid_folder(const struct dirent *entry);
+		int IsPid(const struct dirent *entry);
 		
 		std::string GetUserInfo();
 		std::string GetOSVersionInfo();
@@ -101,8 +101,7 @@ namespace apc
 		std::string OutProcThreadInfo (const ProcThreadInfo& myVec);
 		ProcMemoryInfo GetProcMemoryInfo(int pid);
 		std::string OutProcMemoryInfo(const ProcMemoryInfo& myVec);
-		ProcSocketInfo GetUsedSocketForProcess(int pid);
-		std::string OutUsedSocketForProcess(const ProcSocketInfo& myVec);
-		//указывать id процесса(если 0, то себя)
+		ProcSocketInfo GetProcSocketInfo(int pid);
+		std::string OutProcSocketInfo(const ProcSocketInfo& myVec);
 	};
 }
